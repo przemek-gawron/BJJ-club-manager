@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors, layout, spacing } from '@/theme/theme';
 import { AppText } from './AppText';
+import { Button } from './Button';
 import { icons } from './icons';
 
 type SafeEdge = 'top' | 'bottom' | 'left' | 'right';
@@ -103,3 +104,39 @@ const emptyStyles = StyleSheet.create({
   box: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl, paddingHorizontal: spacing.md },
   icon: { fontSize: 30 },
 });
+
+interface ErrorStateProps {
+  /** Treść od library (PostgREST/PGLite zwracają konkretne komunikaty) albo własny opis. */
+  readonly error?: unknown;
+  readonly hint?: string;
+  readonly onRetry?: () => void;
+  readonly testID?: string;
+}
+
+/**
+ * Odmienny od EmptyState: „brak danych” i „nie udało się pobrać” to inne sytuacje
+ * i inny ruch użytkownika. Mieszanie ich sprawiałoby, że awaria backendu wygląda
+ * jak pusty grafik — bez przycisku ponowienia.
+ */
+export const ErrorState: React.FC<ErrorStateProps> = ({ error, hint, onRetry, testID }) => {
+  const detail = error instanceof Error ? error.message : typeof error === 'string' ? error : undefined;
+  return (
+    <View style={emptyStyles.box} testID={testID}>
+      <AppText style={emptyStyles.icon}>{icons.warning}</AppText>
+      <AppText variant="heading" align="center">
+        Nie udało się pobrać danych
+      </AppText>
+      {detail ? (
+        <AppText variant="muted" align="center">
+          {detail}
+        </AppText>
+      ) : null}
+      {hint ? (
+        <AppText variant="caption" align="center">
+          {hint}
+        </AppText>
+      ) : null}
+      {onRetry ? <Button label="spróbuj ponownie" variant="secondary" onPress={onRetry} testID={testID ? `${testID}-retry` : undefined} /> : null}
+    </View>
+  );
+};

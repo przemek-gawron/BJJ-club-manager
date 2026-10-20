@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/BeltChip';
-import { EmptyState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
+import { EmptyState, ErrorState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
 import { icons } from '@/components/ui/icons';
 import { useAuth } from '@/state/AuthContext';
 import { useClubStats, useMemberStats } from '@/hooks/queries';
@@ -30,7 +30,16 @@ export default function StatsScreen() {
     <Screen refreshing={personal.isRefetching} onRefresh={() => void personal.refetch()} testID="personal-stats-screen" edges={TAB_SCREEN_EDGES}>
       <SectionHeader title="Moje treningi" subtitle={s ? consistencyLabel(s.weeklyAverage) : 'Liczymy twoją regularność'} icon={icons.stats} />
 
-      {!s && !personal.isLoading ? <EmptyState icon={icons.stats} title="Brak danych" message="Zamelduj się na zajęciach, a statystyki pojawią się tutaj." /> : null}
+      {personal.isError ? (
+        <ErrorState
+          error={personal.error}
+          hint="Statystyki liczy zapytanie po stronie serwera — ponów, gdy wróci sieć."
+          onRetry={() => void personal.refetch()}
+          testID="personal-stats-error"
+        />
+      ) : !s && !personal.isLoading ? (
+        <EmptyState icon={icons.stats} title="Brak danych" message="Zamelduj się na zajęciach, a statystyki pojawią się tutaj." />
+      ) : null}
 
       {s ? (
         <>
@@ -96,7 +105,16 @@ const ClubDashboard: React.FC<{ readonly stats: ReturnType<typeof useClubStats>;
         action={<Button label="klub" small variant="secondary" onPress={() => router.push('/admin')} testID="open-club-admin" />}
       />
 
-      {!c && !stats.isLoading ? <EmptyState icon={icons.stats} title="Brak danych frekwencji" message="Zakończ jedne zajęcia, żeby zobaczyć statystyki." /> : null}
+      {stats.isError ? (
+        <ErrorState
+          error={stats.error}
+          hint="Frekwencję liczy zapytanie klubowe — ponów, gdy wróci połączenie."
+          onRetry={() => void stats.refetch()}
+          testID="club-stats-error"
+        />
+      ) : !c && !stats.isLoading ? (
+        <EmptyState icon={icons.stats} title="Brak danych frekwencji" message="Zakończ jedne zajęcia, żeby zobaczyć statystyki." />
+      ) : null}
 
       {c ? (
         <>

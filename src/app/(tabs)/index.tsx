@@ -6,7 +6,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { EmptyState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
+import { EmptyState, ErrorState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
 import { icons } from '@/components/ui/icons';
 import { SessionCard } from '@/components/SessionCard';
 import { PollCard } from '@/components/PollCard';
@@ -135,7 +135,14 @@ export default function TodayScreen() {
         <SessionCard key={session.id} session={session} now={now} coachView={isStaff} onPress={() => openSession(session.id)} />
       ))}
 
-      {sessions.length === 0 && !sessionsQuery.isLoading ? (
+      {sessionsQuery.isError ? (
+        <ErrorState
+          error={sessionsQuery.error}
+          hint="Sprawdź sieć i ponów — grafik pobieramy z serwera przy każdym odświeżeniu."
+          onRetry={() => void sessionsQuery.refetch()}
+          testID="today-error"
+        />
+      ) : sessions.length === 0 && !sessionsQuery.isLoading ? (
         <EmptyState
           icon={icons.calendarOff}
           title="Brak zajęć w kalendarzu"
@@ -148,7 +155,7 @@ export default function TodayScreen() {
         />
       ) : null}
 
-      {today.length === 0 && tomorrow.length === 0 && later.length === 0 && !sessionsQuery.isLoading ? (
+      {today.length === 0 && tomorrow.length === 0 && later.length === 0 && !sessionsQuery.isLoading && !sessionsQuery.isError ? (
         <Card tone="alt">
           <AppText variant="heading">{icons.calendarOff} Dziś bez maty</AppText>
           <AppText variant="muted">Nie masz zajęć w najbliższych dniach — zajrzyj do grafiku i zapisz się z wyprzedzeniem.</AppText>

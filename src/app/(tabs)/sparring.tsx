@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Avatar, BeltChip } from '@/components/ui/BeltChip';
-import { EmptyState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
+import { EmptyState, ErrorState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
 import { icons } from '@/components/ui/icons';
 import { useClearSparringIntent, useSessions, useSparringBoard, useSparringIntent } from '@/hooks/queries';
 import { FOCUS_LABEL, INTENSITY_LABEL, SPARRING_FOCUSES, SPARRING_INTENSITIES, boardSummary } from '@/domain/sparring';
@@ -66,7 +66,14 @@ export default function SparringScreen() {
     <Screen refreshing={board.isRefetching || sessionsQuery.isRefetching} onRefresh={() => void board.refetch()} testID="sparring-screen" edges={TAB_SCREEN_EDGES}>
       <SectionHeader title="Tablica sparów" subtitle="Powiedz, jak chcesz potrenować — dobierzemy partnerów" icon={icons.sparring} />
 
-      {options.length === 0 && !sessionsQuery.isLoading ? (
+      {sessionsQuery.isError ? (
+        <ErrorState
+          error={sessionsQuery.error}
+          hint="Listę zajęć pobieramy z serwera — bez niej nie dobierzemy partnerów."
+          onRetry={() => void sessionsQuery.refetch()}
+          testID="sparring-error"
+        />
+      ) : options.length === 0 && !sessionsQuery.isLoading ? (
         <EmptyState icon={icons.calendarOff} title="Brak najbliższych zajęć" message="Tablica działa dla zaplanowanych zajęć — zajrzyj do grafiku." />
       ) : null}
 
@@ -153,7 +160,14 @@ export default function SparringScreen() {
       </Card>
 
       <SectionHeader title="Kandydaci" subtitle={boardSummary(candidates)} />
-      {candidates.length === 0 && !board.isLoading ? (
+      {board.isError ? (
+        <ErrorState
+          error={board.error}
+          hint="Listę partnerów pobieramy znów przy odświeżeniu ekranu."
+          onRetry={() => void board.refetch()}
+          testID="sparring-board-error"
+        />
+      ) : candidates.length === 0 && !board.isLoading ? (
         <EmptyState
           icon={icons.sparring}
           title="Tablica jest pusta"

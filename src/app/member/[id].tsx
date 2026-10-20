@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Avatar, BeltChip } from '@/components/ui/BeltChip';
-import { EmptyState, Screen, SectionHeader } from '@/components/ui/Screen';
+import { EmptyState, ErrorState, Screen, SectionHeader } from '@/components/ui/Screen';
 import { TextField } from '@/components/ui/TextField';
 import { icons } from '@/components/ui/icons';
 import { useAssignBelt, useMember, useSetMembership, useUpdateMe } from '@/hooks/queries';
@@ -67,6 +67,20 @@ export default function MemberDetailScreen() {
       }
     );
   }, [detail, targetBelt, stripe, note, assignBelt]);
+
+  if (detailQuery.isError) {
+    return (
+      <Screen testID="member-error">
+        <ErrorState
+          error={detailQuery.error}
+          hint="Profil i statystyki czytamy z serwera — ponów, gdy wróci połączenie."
+          onRetry={() => void detailQuery.refetch()}
+          testID="member-detail-error"
+        />
+        <Button label="wróć do katalogu" variant="secondary" onPress={() => router.replace('/(tabs)/members')} />
+      </Screen>
+    );
+  }
 
   if (!detail && !detailQuery.isLoading) {
     return (

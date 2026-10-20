@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Avatar, BeltChip } from '@/components/ui/BeltChip';
-import { EmptyState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
+import { EmptyState, ErrorState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
 import { TextField } from '@/components/ui/TextField';
 import { icons } from '@/components/ui/icons';
 import { useMembers } from '@/hooks/queries';
@@ -90,7 +90,14 @@ export default function MembersScreen() {
 
       <BeltFilters selected={beltFilter} onPick={setBeltFilter} />
 
-      {visible.length === 0 && !membersQuery.isLoading ? (
+      {membersQuery.isError ? (
+        <ErrorState
+          error={membersQuery.error}
+          hint="Katalog klubu pobieramy z serwera — ponów, gdy wróci połączenie."
+          onRetry={() => void membersQuery.refetch()}
+          testID="members-error"
+        />
+      ) : visible.length === 0 && !membersQuery.isLoading ? (
         <EmptyState icon={icons.users} title="Nikt nie pasuje" message="Zmień frazę wyszukiwania lub filtr paska." />
       ) : null}
 

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Avatar, BeltChip } from '@/components/ui/BeltChip';
-import { EmptyState, Screen, SectionHeader } from '@/components/ui/Screen';
+import { EmptyState, ErrorState, Screen, SectionHeader } from '@/components/ui/Screen';
 import { TextField } from '@/components/ui/TextField';
 import { icons } from '@/components/ui/icons';
 import { PollCard } from '@/components/PollCard';
@@ -71,6 +71,20 @@ export default function SessionDetailScreen() {
     if (session.isSignedUp || session.isWaitlisted) leave.mutate({ sessionId: session.id });
     else join.mutate({ sessionId: session.id });
   }, [session, join, leave]);
+
+  if (sessionQuery.isError) {
+    return (
+      <Screen testID="session-error">
+        <ErrorState
+          error={sessionQuery.error}
+          hint="Nie da się zapisać ani odwołać bez bieżących danych zajęć."
+          onRetry={() => void sessionQuery.refetch()}
+          testID="session-detail-error"
+        />
+        <Button label="wróć do grafiku" variant="secondary" onPress={() => router.replace('/(tabs)/schedule')} />
+      </Screen>
+    );
+  }
 
   if (!session && !sessionQuery.isLoading) {
     return (

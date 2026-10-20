@@ -5,7 +5,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { EmptyState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
+import { EmptyState, ErrorState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
 import { icons } from '@/components/ui/icons';
 import { SessionCard } from '@/components/SessionCard';
 import { useSessions, useSyncSchedule, useTemplates } from '@/hooks/queries';
@@ -112,7 +112,14 @@ export default function ScheduleScreen() {
       ) : null}
 
       <SectionHeader title="Nadchodzące zajęcia" subtitle={`${upcoming.length} w najbliższych 3 tygodniach`} icon={icons.clock} />
-      {upcoming.length === 0 && !sessionsQuery.isLoading ? (
+      {sessionsQuery.isError ? (
+        <ErrorState
+          error={sessionsQuery.error}
+          hint="Grafik pobieramy z serwera przy każdym odświeżeniu ekranu."
+          onRetry={() => void sessionsQuery.refetch()}
+          testID="schedule-error"
+        />
+      ) : upcoming.length === 0 && !sessionsQuery.isLoading ? (
         <EmptyState icon={icons.calendarOff} title="Nic zaplanowanego" message="W najbliższych trzech tygodniach nie ma zajęć w kalendarzu." />
       ) : null}
       {upcoming.map((session) => (
