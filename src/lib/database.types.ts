@@ -187,6 +187,9 @@ export type Database = {
         Row: {
           id: string;
           display_name: string;
+          first_name: string;
+          last_name: string;
+          nickname: string | null;
           role: Role;
           membership_status: MemberProfile['membership'];
           joined_at: string;
@@ -197,6 +200,17 @@ export type Database = {
           weight_band: string | null;
           weight_band_floor: number | null;
           last_training_at: string | null;
+        };
+        Relationships: [];
+      };
+      /** Ustawienia klubu bez tokenu meldunkowego — ten zostaje w tabeli club_settings. */
+      club_public: {
+        Row: {
+          id: number;
+          name: string;
+          city: string | null;
+          timezone: string;
+          updated_at: string;
         };
         Relationships: [];
       };

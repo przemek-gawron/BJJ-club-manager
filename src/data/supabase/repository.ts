@@ -542,18 +542,24 @@ export const supabaseApi: ClubApi = {
   },
 
   async memberDetail(id) {
-    const [{ data: profileRow, error: profileError }, stats, { data: beltRows, error: beltError }] = await Promise.all([
+    // Pełny wiersz z profiles dostanie tylko właściciel konta i kadra (polityka
+    // profiles_select_self_or_staff) — dla nich liczy się też dokładna masa.
+    // Zwykły członek oglądający cudzy profil dostaje pustkę i wtedy schodzimy do
+    // katalogu publicznego, który ma te same dane jawne, ale bez kontaktu.
+    const [profileRes, publicRes, stats, { data: beltRows, error: beltError }] = await Promise.all([
       db().from('profiles').select('*').eq('id', id).maybeSingle(),
+      db().from('members_public').select('*').eq('id', id).maybeSingle(),
       supabaseApi.memberStats(id),
       db().from('belt_history').select('*').eq('member_id', id).order('assigned_at', { ascending: false }),
     ]);
-    if (profileError || !profileRow) return null;
     if (beltError) throw new Error(`belt_history: ${beltError.message}`);
-    return {
-      member: toProfile(profileRow),
-      stats,
-      beltHistory: (beltRows ?? []).map(toBelt),
-    };
+
+    let member: MemberProfile | null = null;
+    if (profileRes.data) member = toProfile(profileRes.data);
+    else if (publicRes.data) member = toProfileFromPublic(publicRes.data);
+
+    if (!member) return null;
+    return { member, stats, beltHistory: (beltRows ?? []).map(toBelt) };
   },
 
   async assignBelt(memberId, belt, stripe, note) {
@@ -581,46 +587,39 @@ export const supabaseApi: ClubApi = {
 
   // ------------------------------------------------- tablica sparingów ---
   async sparringBoard(sessionId) {
-    const [{ data: intentRows, error: intentsError }, members] = await Promise.all([
-      db().from('sparring_intents').select('*').eq('session_id', sessionId),
-      supabaseApi.listMembers(),
-    ]);
-    if (intentsError) throw new Error(`sparring_intents: ${intentsError.message}`);
-
     const me = await supabaseApi.me();
     if (!me) return [];
 
-    const { data: profileRows, error: profilesError } = await db().from('profiles').select('*');
-    if (profilesError) throw new Error(`profiles: ${profilesError.message}`);
-    const profiles = (profileRows ?? []).map(toProfile);
-    const cardById = new Map(members.map((m) => [m.id, m]));
+    // Kandydatów bierzemy z katalogu publicznego, nie z profiles: od czasu polityki
+    // profiles_select_self_or_staff zwykły członek widzi tam jeden wiersz — swój —
+    // więc dawne `from('profiles').select('*')` cicho dawałoby pustą tablicę.
+    // Do rangowania potrzebny jest pas, staż i masa; katalog ma wszystko, tylko masę
+    // jako przedział 10 kg, więc drugą stronę liczymy z dołu przedziału.
+    const [{ data: intentRows, error: intentsError }, { data: catalogRows, error: catalogError }] = await Promise.all([
+      db().from('sparring_intents').select('*').eq('session_id', sessionId),
+      db().from('members_public').select('*'),
+    ]);
+    if (intentsError) throw new Error(`sparring_intents: ${intentsError.message}`);
+    if (catalogError) throw new Error(`members_public: ${catalogError.message}`);
+
+    const catalog = (catalogRows ?? []).map(toProfileFromPublic);
+    const cardById = new Map((catalogRows ?? []).map((row) => [row.id, toPublicCard(row)]));
+    const intents = (intentRows ?? []).map((r) => ({
+      id: r.id,
+      sessionId: r.session_id,
+      memberId: r.member_id,
+      intensity: r.intensity,
+      focus: r.focus,
+      createdAt: r.created_at,
+    }));
 
     const { rankSparringPartners } = await import('@/domain/sparring');
     return rankSparringPartners({
       me,
-      members: profiles,
-      intents: (intentRows ?? []).map((r) => ({
-        id: r.id,
-        sessionId: r.session_id,
-        memberId: r.member_id,
-        intensity: r.intensity,
-        focus: r.focus,
-        createdAt: r.created_at,
-      })),
+      members: catalog,
+      intents,
       cardFor: (m) => cardById.get(m.id) ?? publicCardFor(m),
-      myIntent: (() => {
-        const mine = (intentRows ?? []).find((r) => r.member_id === me.id);
-        return mine
-          ? {
-              id: mine.id,
-              sessionId: mine.session_id,
-              memberId: mine.member_id,
-              intensity: mine.intensity,
-              focus: mine.focus,
-              createdAt: mine.created_at,
-            }
-          : undefined;
-      })(),
+      myIntent: intents.find((i) => i.memberId === me.id),
       now: new Date(),
     });
   },
@@ -746,5 +745,33 @@ function toPublicCard(row: MemberPublicRow) {
     joinedAt: row.joined_at,
     avatarSeed: row.avatar_seed,
     lastTrainingAt: row.last_training_at,
+  };
+}
+
+/**
+ * Profil zbudowany na katalogu publicznym members_public — bez e-maila, telefonu
+ * i notatek trenera (tych kolumn widok celowo nie zwraca). Używamy go, gdy RLS nie
+ * pozwala przeczytać pełnego wiersza z profiles, czyli gdy członek ogląda cudzy profil.
+ *
+ * Dokładnej masy w katalogu nie ma celowo: jest tylko dół przedziału 10 kg, więc
+ * weightBand() odtworzy z niego etykietę „50–59 kg” tak samo jak z pełnej wagi.
+ */
+function toProfileFromPublic(row: MemberPublicRow): MemberProfile {
+  return {
+    id: row.id,
+    email: '',
+    firstName: row.first_name,
+    lastName: row.last_name,
+    nickname: row.nickname,
+    role: row.role,
+    membership: row.membership_status,
+    joinedAt: row.joined_at,
+    weightKg: row.weight_band_floor ?? null,
+    phone: null,
+    belt: row.belt,
+    stripe: row.stripe as StripeCount,
+    beltAssignedAt: row.belt_assigned_at,
+    avatarSeed: row.avatar_seed,
+    notes: null,
   };
 }

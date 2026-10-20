@@ -58,10 +58,14 @@ as $$
 $$;
 
 -- ---------------------------------------------------------------- profiles --
--- Członek widzi wszystkich członków (to zamknięta społeczność i potrzebujemy
--- katalogu), ale e-mail i telefon są zasłonięte widokiem dla nietrenerów.
-create policy profiles_select_all on public.profiles
-  for select to authenticated using (true);
+-- Tabela profiles trzyma dane wrażliwe (e-mail, telefon, notatki trenera, dokładna
+-- masa). Polityka „using (true)” nie mogła ich ukryć: RLS filtruje wiersze, a nie
+-- kolumny, więc każdy członek klubu wyczytał przez REST kontakty i notatki wszystkich
+-- pozostałych. Katalog członków idzie przez widok members_public (bez kontaktu i bez
+-- dokładnej masy), pełny profil widzi tylko właściciel konta i kadra.
+create policy profiles_select_self_or_staff on public.profiles
+  for select to authenticated
+  using (id = auth.uid() or public.is_staff());
 
 create policy profiles_update_self on public.profiles
   for update to authenticated
@@ -89,6 +93,12 @@ select
       then p.first_name || ' „' || p.nickname || '”'
     else p.first_name || ' ' || p.last_name
   end as display_name,
+  -- Imię/nazwisko/ksywa są tu celowo: to dane, które i tak pokazuje display_name,
+  -- a ekran profilu potrzebuje ich osobno. Kontakt (e-mail, telefon, notatki) zostaje
+  -- w tabeli profiles — poza zasięgiem nietrenerów.
+  p.first_name,
+  p.last_name,
+  p.nickname,
   p.role,
   p.membership_status,
   p.joined_at,
