@@ -492,40 +492,49 @@ stable
 security definer
 set search_path = public
 as $$
-  select
-    o.id,
-    o.label,
-    o.source,
-    o.vote_count,
-    sum(o.vote_count) over (),
-    row_number() over (
-      order by o.vote_count desc,
-               (case when o.source = 'coach' then 0 else 1 end),
-               o.position,
-               lower(o.label)
-    ),
-    case
-      when (select decided_option_id from public.polls where id = p_poll) is not null
-        then o.id = (select decided_option_id from public.polls where id = p_poll)
-      else o.vote_count > 0
-           and o.vote_count = (select max(vote_count) from public.poll_options where poll_id = p_poll)
-           and o.id = (
-             select po.id from public.poll_options po
-             where po.poll_id = p_poll and po.vote_count = (
-               select max(vote_count) from public.poll_options where poll_id = p_poll
-             )
-             order by (case when po.source = 'coach' then 0 else 1 end), po.position, lower(po.label)
-             limit 1
-           )
-    end
-  from (
-    select po.id, po.label, po.source, po.position,
-           count(pv.member_id)::integer as vote_count
+  -- Głosy liczymy raz w CTE: dawniej podzapytanie zwycięzcy odwoływało się do
+  -- vote_count na surowej tabeli poll_options, której ta kolumna nie ma.
+  with counted as (
+    select
+      po.id,
+      po.label,
+      po.source,
+      po.position,
+      count(pv.member_id)::integer as vote_count
     from public.poll_options po
     left join public.poll_votes pv on pv.option_id = po.id
     where po.poll_id = p_poll
     group by po.id
-  ) o
+  ),
+  decided as (
+    select p.decided_option_id from public.polls p where p.id = p_poll
+  ),
+  winner as (
+    select c.id
+    from counted c
+    where c.id = (select decided_option_id from decided)
+       or (
+         (select decided_option_id from decided) is null
+         and c.vote_count > 0
+         and c.vote_count = (select max(vote_count) from counted)
+       )
+    order by (case when c.source = 'coach' then 0 else 1 end), c.position, lower(c.label)
+    limit 1
+  )
+  select
+    c.id,
+    c.label,
+    c.source,
+    c.vote_count,
+    sum(c.vote_count) over (),
+    row_number() over (
+      order by c.vote_count desc,
+               (case when c.source = 'coach' then 0 else 1 end),
+               c.position,
+               lower(c.label)
+    ) as rank,
+    exists (select 1 from winner w where w.id = c.id)
+  from counted c
   order by rank;
 $$;
 

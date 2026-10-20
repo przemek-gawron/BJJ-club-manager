@@ -107,14 +107,14 @@ from public.profiles p;
 
 grant select on public.members_public to authenticated;
 
--- Widok pełny — tylko dla trenera i admina (masa, kontakt, notatki).
-create or replace view public.members_staff as
-select p.*, (select max(a.checked_in_at) from public.attendance a where a.member_id = p.id) as last_training_at
-from public.profiles p;
-
-alter view public.members_staff enable row level security;
-create policy members_staff_coaches on public.members_staff
-  for select to authenticated using (public.is_staff());
+-- Pełny profil (masa, kontakt, notatki) czytamy z tabeli profiles, nie z widoku.
+-- Wcześniej istniał tu widok members_staff z „RLS na widoku” — Postgres nie pozwala
+-- ani włączyć RLS na widoku, ani założyć na nim polityki, więc migracja wywalała się
+-- dokładnie w tym miejscu. Gdyby tylko usunąć `alter view`, zostałby widok bez żadnej
+-- ochrony, a Supabase domyślnie nadaje widokom SELECT roli authenticated — czyli każdy
+-- członek klubu wyczytałby przez REST e-maile, telefony i notatki wszystkich pozostałych.
+-- Widok nie miał odbiorców w kodzie aplikacji, więc go usuwamy.
+drop view if exists public.members_staff;
 
 -- ----------------------------------------------------------- belt_history --
 create policy belt_history_select on public.belt_history

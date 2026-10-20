@@ -199,9 +199,13 @@ create table public.poll_options (
   source       public.option_src_t not null default 'coach',
   created_by   uuid not null references public.profiles (id) on delete cascade,
   position     integer not null default 0,
-  created_at   timestamptz not null default now(),
-  unique (poll_id, lower(label))
+  created_at   timestamptz not null default now()
 );
+
+-- Warianty etykiety bez względu na wielkość liter nie mogą się powtarzać w ankiecie.
+-- Wyrażenia nie wolno wpisać do constraintu tabeli (unikalność liczona z lower()),
+-- więc musi to być indeks wyrażeniowy.
+create unique index poll_options_unique_label on public.poll_options (poll_id, lower(label));
 
 create index poll_options_poll_idx on public.poll_options (poll_id, position);
 

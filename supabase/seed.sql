@@ -8,6 +8,14 @@
 
 create extension if not exists "pgcrypto";
 
+-- md5 zwraca hex, którego nie da się rzucić na int (`md5(...)::int` to błąd).
+-- Ten deterministyczny pomocnik daje stabilną liczbę z uuid dla danych demo.
+create or replace function public.hex_int(p_id uuid)
+returns bigint
+language sql
+immutable
+as $$ select ('x' || substr(md5(p_id::text), 1, 8))::bit(32)::bigint $$;
+
 -- --------------------------------------------------------------- konta -----
 -- Hasło startowe wszystkich kont demo: Trening123!
 -- (crypt z bcrypt — zmienić przed użyciem na produkcji).
@@ -87,7 +95,9 @@ select p.id, p.belt, p.stripe,
        (select id from public.profiles where role = 'admin' limit 1),
        'wpis historyczny z danych demonstracyjnych'
 from public.profiles p
-where p.id like 'a0ee%' or p.id is not null
+-- Wpis historyczny dla każdego członka. Dawniej stał tu warunek `p.id like 'a0ee%'`,
+-- który jest nieprawidłowy na kolumnie uuid (brak operatora ~~) i w dodatku niczego
+-- nie zawężał, bo dopisywał `or p.id is not null`.
 on conflict do nothing;
 
 -- ---------------------------------------------------------------- klub -----
@@ -128,7 +138,19 @@ update public.class_templates
    set coach_id = (select id from public.profiles where nickname is null and role = 'coach' limit 1)
  where name in ('No-Gi Fundamentals', 'Zapasy i rzuty');
 
+-- materialize_sessions pilnuje, że grafik synchronizuje kadra (is_staff -> auth.uid()).
+-- W SQL Edytorze i w psql nie ma żądania JWT, więc auth.uid() jest NULL i funkcja
+-- zwraca odmowę — bez tego kroku seed utworzyłby zero sesji, a całe demo byłoby puste.
+-- Podmieniamy kontekst tylko na czas wywołania i sprzątamy po sobie.
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object('sub', (select id from public.profiles where role = 'admin' limit 1), 'role', 'authenticated')::text,
+  false
+);
+
 select public.materialize_sessions((current_date - 35)::date, (current_date + 14)::date);
+
+select set_config('request.jwt.claims', '', false);
 
 -- ---------------------------------------------------------- techniki -------
 insert into public.techniques (name, category, class_type, usage_count) values
@@ -142,7 +164,7 @@ insert into public.techniques (name, category, class_type, usage_count) values
   ('Armbar from mount',         'submissions', null,           7),
   ('Knee cut pass',             'passing',     'no_gi',        9),
   ('Collar elbow tie-up',       'wrestling',   'no_gi',       16),
-  ('D'arce choke',              'submissions', 'no_gi',        5),
+  ('D''arce choke',             'submissions', 'no_gi',        5),
   ('Leg lock entries',          'submissions', 'no_gi',        6),
   ('Turtle defense',            'guard',       null,           4),
   ('Back take transitions',     'submissions', null,          13),
@@ -157,8 +179,8 @@ with members as (
          case
            when role in ('coach','admin') then 0.95
            when joined_at > now() - interval '60 days' then 0.25
-           when md5(id::text)::int % 7 = 0 then 0.15   -- "zniknięci"
-           else 0.45 + (md5(id::text)::int % 40) / 100.0
+           when hex_int(id) % 7 = 0 then 0.15   -- "zniknięci"
+           else 0.45 + (hex_int(id) % 40) / 100.0
          end as attendance_p
   from public.profiles
   where membership_status = 'active'
@@ -239,20 +261,25 @@ $$;
 do $$
 declare
   v_session uuid;
-  v_coach uuid;
+  v_starts  timestamptz;
+  v_coach   uuid;
 begin
-  select s.id into v_session
+  -- Zajęcia z zapasem ponad pół godziny: closes_at = start - 30 min musi zostać
+  -- w przyszłości, bo check (closes_at > created_at) odrzuciłby whole insert.
+  select s.id, s.starts_at into v_session, v_starts
   from public.sessions s
   join public.class_templates t on t.id = s.class_template_id
-  where t.name = 'No-Gi Fundamentals' and s.starts_at > now() and s.status = 'scheduled'
+  where t.name = 'No-Gi Fundamentals' and s.starts_at > now() + interval '90 minutes' and s.status = 'scheduled'
   order by s.starts_at limit 1;
 
   select id into v_coach from public.profiles where role = 'coach' limit 1;
 
   if v_session is null then return; end if;
 
+  -- Anketa zamyka się na pół godziny przez startem zajęć. Dawniej stało tu
+  -- `v_session - interval '30 minutes'`, czyli odejmowanie interwału od uuid.
   insert into public.polls (session_id, created_by, status, closes_at)
-  values (v_session, v_coach, 'open', v_session - interval '30 minutes')
+  values (v_session, v_coach, 'open', v_starts - interval '30 minutes')
   on conflict (session_id) do update set status = 'open', closes_at = excluded.closes_at;
 end;
 $$;
@@ -288,10 +315,11 @@ on conflict (poll_id, member_id) do nothing;
 do $$
 declare
   v_session uuid;
+  v_starts  timestamptz;
   v_poll uuid;
   v_coach uuid;
 begin
-  select s.id into v_session
+  select s.id, s.starts_at into v_session, v_starts
   from public.sessions s
   join public.class_templates t on t.id = s.class_template_id
   where t.name = 'Gi All Levels' and s.starts_at < now() and s.status <> 'cancelled'
@@ -300,8 +328,10 @@ begin
   select id into v_coach from public.profiles where role = 'coach' limit 1;
   if v_session is null then return; end if;
 
-  insert into public.polls (session_id, created_by, status, closes_at)
-  values (v_session, v_coach, 'closed', v_session - interval '30 minutes')
+  -- Historyczna ankieta: zamknięcie leży w przeszłości, a checks_at > created_at
+  -- wymaga, żeby utworzenie było jeszcze wcześniej — nie może dostać domyślnego now().
+  insert into public.polls (session_id, created_by, status, closes_at, created_at)
+  values (v_session, v_coach, 'closed', v_starts - interval '30 minutes', v_starts - interval '7 days')
   on conflict (session_id) do nothing
   returning id into v_poll;
 
@@ -320,8 +350,9 @@ $$;
 -- Tablica sparingowa na najbliższe zajęcia.
 insert into public.sparring_intents (session_id, member_id, intensity, focus)
 select s.id, p.id,
-       (array['light','technical','hard'])[(md5(p.id::text)::int % 3) + 1],
-       (array['any','takedowns','guard','passing','submissions','wrestling'])[(md5(p.id::text)::int % 6) + 1]
+       -- Tablica literalów ma typ text, a kolumny są enum — rzut jest konieczny.
+       ((array['light','technical','hard'])[(hex_int(p.id) % 3) + 1])::public.intensity_t,
+       ((array['any','takedowns','guard','passing','submissions','wrestling'])[(hex_int(p.id) % 6) + 1])::public.focus_t
 from public.sessions s
 cross join public.profiles p
 where s.status = 'scheduled'
@@ -330,7 +361,7 @@ where s.status = 'scheduled'
     where x.status = 'scheduled' and x.starts_at > now() - interval '4 hours'
   )
   and p.role = 'member' and p.membership_status = 'active'
-  and md5(p.id::text)::int % 2 = 0
+  and hex_int(p.id) % 2 = 0
 on conflict (session_id, member_id) do nothing;
 
 -- Podsumowanie
