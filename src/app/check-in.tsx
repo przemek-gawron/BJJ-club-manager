@@ -144,8 +144,8 @@ export default function CheckInScreen() {
       {api.mode === 'demo' ? (
         <Card tone="alt" compact>
           <AppText variant="caption">
-            {icons.info} Tryb demo: token klubu to «{CLUB_CHECKIN_TOKEN}». Możesz go zostawić i kliknąć «zamelduj» — logika okna czasowego jest ta
-            sama co na produkcji.
+            {icons.info} Tryb demo: token klubu to «{CLUB_CHECKIN_TOKEN}». Zostaw go i kliknij «zamelduj» — zobaczysz te same reguły okna czasowego co
+            na produkcji, więc poza oknem dostaniesz «brak zajęć w oknie».
           </AppText>
         </Card>
       ) : null}
