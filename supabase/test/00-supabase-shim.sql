@@ -1,7 +1,11 @@
 -- ============================================================================
 --  Shim odtwarzający środowisko Supabase na czystym Postgresie.
---  Tylko do testów migracji i polityk RLS lokalnie (bez Docker/Supabase CLI).
+--  Tylko do testów migracji, seedu i polityk RLS lokalnie (bez Docker/Supabase CLI).
 --  Nie jest częścią wdrożenia — aplikacja łączy się z prawdziwym Supabase.
+--
+--  Wierność testów: polityki RLS sprawdzamy jako rolę `authenticated` (jak klient
+--  REST), nigdy jako właściciela tabel — właściciel RLS omija i testy mylnie
+--  przechodzą. auth.uid() czyta JWT z GUC request.jwt.claims — jak Supabase.
 -- ============================================================================
 
 create schema if not exists auth;
@@ -78,9 +82,11 @@ as $$
 $$;
 
 -- Supabase nadaje uprawnienia domyślnie; tu robimy to jawnie dla naszych ról.
+-- Bez DML dla `authenticated` test RLS dostałby „permission denied” i pokazał błędną
+-- przyczynę zamiast realnego zachowania polityk (w Supabase klient REST ma te prawa).
 grant usage on schema public to anon, authenticated, service_role;
 grant usage on schema auth to anon, authenticated, service_role;
 grant select on auth.users to authenticated, service_role;
-alter default privileges in schema public grant all on tables to service_role;
-alter default privileges in schema public grant all on functions to service_role;
-alter default privileges in schema public grant all on sequences to service_role;
+alter default privileges in schema public grant select, insert, update, delete on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant usage, select, update on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
