@@ -5,7 +5,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { EmptyState, Screen, SectionHeader } from '@/components/ui/Screen';
+import { EmptyState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
 import { icons } from '@/components/ui/icons';
 import { SessionCard } from '@/components/SessionCard';
 import { useSessions, useSyncSchedule, useTemplates } from '@/hooks/queries';
@@ -43,7 +43,7 @@ export default function ScheduleScreen() {
   const weekKey = `${weekStart.toISOString()}-${weekOffset}`;
 
   return (
-    <Screen refreshing={sessionsQuery.isRefetching} onRefresh={() => void sessionsQuery.refetch()} testID="schedule-screen">
+    <Screen refreshing={sessionsQuery.isRefetching} onRefresh={() => void sessionsQuery.refetch()} testID="schedule-screen" edges={TAB_SCREEN_EDGES}>
       <SectionHeader
         title="Grafik"
         subtitle="Szablony tygodniowe i nadchodzące zajęcia z zapisami"

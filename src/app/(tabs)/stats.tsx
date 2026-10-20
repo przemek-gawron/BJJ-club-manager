@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/BeltChip';
-import { EmptyState, Screen, SectionHeader } from '@/components/ui/Screen';
+import { EmptyState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
 import { icons } from '@/components/ui/icons';
 import { useAuth } from '@/state/AuthContext';
 import { useClubStats, useMemberStats } from '@/hooks/queries';
@@ -27,7 +27,7 @@ export default function StatsScreen() {
 
   const s = personal.data;
   return (
-    <Screen refreshing={personal.isRefetching} onRefresh={() => void personal.refetch()} testID="personal-stats-screen">
+    <Screen refreshing={personal.isRefetching} onRefresh={() => void personal.refetch()} testID="personal-stats-screen" edges={TAB_SCREEN_EDGES}>
       <SectionHeader title="Moje treningi" subtitle={s ? consistencyLabel(s.weeklyAverage) : 'Liczymy twoją regularność'} icon={icons.stats} />
 
       {!s && !personal.isLoading ? <EmptyState icon={icons.stats} title="Brak danych" message="Zamelduj się na zajęciach, a statystyki pojawią się tutaj." /> : null}
@@ -88,7 +88,7 @@ export default function StatsScreen() {
 const ClubDashboard: React.FC<{ readonly stats: ReturnType<typeof useClubStats>; readonly now: Date }> = ({ stats, now }) => {
   const c = stats.data;
   return (
-    <Screen refreshing={stats.isRefetching} onRefresh={() => void stats.refetch()} testID="club-stats-screen">
+    <Screen refreshing={stats.isRefetching} onRefresh={() => void stats.refetch()} testID="club-stats-screen" edges={TAB_SCREEN_EDGES}>
       <SectionHeader
         title="Frekwencja klubu"
         subtitle="Podsumowanie ostatnich 6 tygodni"

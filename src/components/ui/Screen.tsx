@@ -6,19 +6,30 @@ import { colors, layout, spacing } from '@/theme/theme';
 import { AppText } from './AppText';
 import { icons } from './icons';
 
+type SafeEdge = 'top' | 'bottom' | 'left' | 'right';
+
+/** Krawędzie dla ekranów w zakładkach — ich nawigator ma `headerShown: false`, więc górny margines bierzemy sami. */
+export const TAB_SCREEN_EDGES: ReadonlyArray<SafeEdge> = ['top', 'bottom'];
+
 interface ScreenProps {
   readonly children: React.ReactNode;
   readonly refreshing?: boolean;
   readonly onRefresh?: () => void;
   readonly scroll?: boolean;
   readonly testID?: string;
+  /**
+   * Krawędzie safe area. Domyślnie tylko dół: ekran w stosu ma nagłówek, który sam
+   * odprowadza górnym marginesem. Zakładki ukrywają nagłówek i muszą przekazać `['top', 'bottom']`,
+   * inaczej tytuł wchodzi pod wyspę dynamiczną i zegar.
+   */
+  readonly edges?: ReadonlyArray<SafeEdge>;
 }
 
 /** Wspólna ramka ekranu: tło, safe area, odstęp i odświeżanie gestem. */
-export const Screen: React.FC<ScreenProps> = ({ children, refreshing, onRefresh, scroll = true, testID }) => {
+export const Screen: React.FC<ScreenProps> = ({ children, refreshing, onRefresh, scroll = true, testID, edges = ['bottom'] }) => {
   const body = <View style={styles.content}>{children}</View>;
   return (
-    <SafeAreaView edges={['bottom']} style={styles.safe} testID={testID}>
+    <SafeAreaView edges={[...edges]} style={styles.safe} testID={testID}>
       {scroll ? (
         <ScrollView
           contentContainerStyle={styles.scroll}

@@ -6,7 +6,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { EmptyState, Screen, SectionHeader } from '@/components/ui/Screen';
+import { EmptyState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
 import { icons } from '@/components/ui/icons';
 import { SessionCard } from '@/components/SessionCard';
 import { PollCard } from '@/components/PollCard';
@@ -58,6 +58,7 @@ export default function TodayScreen() {
         void attendance.refetch();
       }}
       testID="today-screen"
+      edges={TAB_SCREEN_EDGES}
     >
       <View style={styles.topRow}>
         <View style={styles.topText}>

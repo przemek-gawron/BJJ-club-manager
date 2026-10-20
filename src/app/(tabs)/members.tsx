@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Avatar, BeltChip } from '@/components/ui/BeltChip';
-import { EmptyState, Screen, SectionHeader } from '@/components/ui/Screen';
+import { EmptyState, Screen, SectionHeader, TAB_SCREEN_EDGES } from '@/components/ui/Screen';
 import { TextField } from '@/components/ui/TextField';
 import { icons } from '@/components/ui/icons';
 import { useMembers } from '@/hooks/queries';
@@ -54,7 +54,7 @@ export default function MembersScreen() {
   }, [members, query, sort, beltFilter]);
 
   return (
-    <Screen refreshing={membersQuery.isRefetching} onRefresh={() => void membersQuery.refetch()} testID="members-screen">
+    <Screen refreshing={membersQuery.isRefetching} onRefresh={() => void membersQuery.refetch()} testID="members-screen" edges={TAB_SCREEN_EDGES}>
       <SectionHeader
         title={isStaff ? 'Klub' : 'Ludzie'}
         subtitle={`${members.length} ${members.length === 1 ? 'osoba' : 'osób'} w klubie`}
