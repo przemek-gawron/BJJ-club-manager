@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
@@ -23,19 +24,29 @@ const AuthContext = createContext<AuthState | null>(null);
  * W trybie demo sesja żyje w repozytorium in-memory, w Supabase — w tokenie JWT.
  */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const queryClient = useQueryClient();
   const [member, setMember] = useState<MemberProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  // Ten sam stan w ref: `refresh` musi porównać stare i nowe konto, nie odświeżając
+  // zamknięcia przy każdym renderze.
+  const memberRef = useRef<MemberProfile | null>(null);
 
   const refresh = useCallback(async () => {
     try {
       const profile = await api.me();
+      // Zmiana konta (logowanie bez uprzedniego wylogowania, przełączenie demo-konta)
+      // nie może zostawić w cache danych poprzedniego członka.
+      if (profile?.id !== memberRef.current?.id) queryClient.clear();
+      memberRef.current = profile;
       setMember(profile);
     } catch {
+      memberRef.current = null;
+      queryClient.clear();
       setMember(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     void refresh();
@@ -43,8 +54,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = useCallback(async () => {
     await api.signOut();
+    // Cache zapytań przeżywa zmianę konta: bez tego następne logowanie (u tego samego
+    // operatora na tym samym telefonie) na ułamek sekundy pokaże grafik i frekwencję
+    // poprzedniego członka, a przy trybie demo nawet jego dane poza kolejnością.
+    queryClient.clear();
+    memberRef.current = null;
     setMember(null);
-  }, []);
+  }, [queryClient]);
 
   const value = useMemo<AuthState>(
     () => ({
