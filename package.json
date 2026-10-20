@@ -44,7 +44,7 @@
     "lint": "expo lint",
     "db:migrate": "node scripts/apply-migrations.mjs",
     "db:seed": "node scripts/apply-seed.mjs",
-    "db:types": "node scripts/generate-types.mjs"
+    "db:types": "node scripts/check-types.mjs"
   },
   "private": true
 }
