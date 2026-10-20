@@ -228,7 +228,13 @@ export interface ClubStats {
   readonly activeMembers: number;
   readonly sessionsHeld: number;
   readonly averageAttendance: number;
+  /**
+   * Ilu zapisanych faktycznie przyszło, w procentach. Zawsze 0-100: meldunki bez
+   * zapisu (walk-iny) tu nie wchodzą, bo nie mają pary w mianowniku.
+   */
   readonly attendanceRate: number;
+  /** Meldunki bez uprzedniego zapisu — obok frekwencji, żeby 0% nie czytano jako „nikt nie przyszedł”. */
+  readonly walkIns: number;
   readonly noShows: number;
   readonly checkInsToday: number;
   readonly attendanceByWeekday: ReadonlyArray<readonly [number, number]>;

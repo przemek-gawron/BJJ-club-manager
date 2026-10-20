@@ -124,9 +124,14 @@ const ClubDashboard: React.FC<{ readonly stats: ReturnType<typeof useClubStats>;
               <Metric value={c.averageAttendance} label="średnio na zajęciach" caption={`${c.sessionsHeld} przeprowadzonych`} />
             </View>
             <View style={styles.badgeRow}>
-              <Badge label={`wypisywka ${100 - c.attendanceRate}%`} tone={c.attendanceRate >= 80 ? 'success' : 'warning'} />
-              <Badge label={`obecność ${c.attendanceRate}%`} tone="success" />
+              <Badge
+                label={`obecność ${c.attendanceRate}%`}
+                tone={c.attendanceRate >= 80 ? 'success' : 'warning'}
+              />
               <Badge label={`${c.noShows} no-show`} tone={c.noShows > 5 ? 'warning' : 'muted'} />
+              {/* Bez tego „obecność 0%” przy pełnej macie wyglądałoby jak frekwencja,
+                  a po prostu nikt się nie zapisywał z wyprzedzeniem. */}
+              <Badge label={`${c.walkIns} bez zapisu`} tone={c.walkIns > 0 ? 'primary' : 'muted'} />
             </View>
           </Card>
 

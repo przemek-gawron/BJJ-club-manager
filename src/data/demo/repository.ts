@@ -867,7 +867,20 @@ export const demoApi: ClubApi = {
     const held = store.sessions.filter((s) => s.status !== 'scheduled');
     const perSession = store.sessions.map((s) => attendanceFor(store, s.id).length).filter((n) => n > 0);
     const bookedActive = store.signups.filter((s) => s.status === 'active' && held.some((h) => h.id === s.sessionId)).length;
-    const presentHeld = store.attendance.filter((a) => held.some((h) => h.id === a.sessionId)).length;
+    // Frekwencja liczy obecnych SPOŚRÓD zapisanych. Walk-in nie ma pary w mianowniku,
+    // więc dawne `presentHeld / bookedActive` zawyżało wynik: przy 2 zapisanych i 22
+    // meldunkach wychodziło 1100%, a wyeksponowana obok „wypisywka” dawała -1000%.
+    const activeSignup = new Set(
+      store.signups.filter((s) => s.status === 'active').map((s) => `${s.sessionId}|${s.memberId}`)
+    );
+    // Zapis na liście rezerwowej też jest zapisem: taka osoba nie jest „bez zapisu”,
+    // choć nie wchodzi do frekwencji (liczymy ją od zapisów aktywnych).
+    const anySignup = new Set(
+      store.signups.filter((s) => s.status !== 'cancelled').map((s) => `${s.sessionId}|${s.memberId}`)
+    );
+    const presentHeld = store.attendance.filter((a) => held.some((h) => h.id === a.sessionId));
+    const presentBooked = presentHeld.filter((a) => activeSignup.has(`${a.sessionId}|${a.memberId}`)).length;
+    const walkIns = presentHeld.filter((a) => !anySignup.has(`${a.sessionId}|${a.memberId}`)).length;
 
     const byWeekday = new Map<number, number>();
     const byHour = new Map<number, number>();
@@ -917,7 +930,8 @@ export const demoApi: ClubApi = {
       activeMembers: store.profiles.filter((p) => p.membership === 'active').length,
       sessionsHeld: held.length,
       averageAttendance: perSession.length ? Math.round((perSession.reduce((a, b) => a + b, 0) / perSession.length) * 10) / 10 : 0,
-      attendanceRate: bookedActive ? Math.round((presentHeld / bookedActive) * 100) : 0,
+      attendanceRate: bookedActive ? Math.round((presentBooked / bookedActive) * 100) : 0,
+      walkIns,
       noShows: store.noShows.length,
       checkInsToday: store.attendance.filter((a) => todayIds.has(a.sessionId)).length,
       attendanceByWeekday: [...byWeekday.entries()].sort((a, b) => a[0] - b[0]),

@@ -677,6 +677,7 @@ export const supabaseApi: ClubApi = {
       sessionsHeld: Number(value.sessions_held ?? 0),
       averageAttendance: Number(value.average_attendance ?? 0),
       attendanceRate: Number(value.attendance_rate ?? 0),
+      walkIns: Number(value.walk_ins ?? 0),
       noShows: Number(value.no_shows ?? 0),
       checkInsToday: Number(value.check_ins_today ?? 0),
       attendanceByWeekday: pairs(value.by_weekday),

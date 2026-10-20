@@ -729,12 +729,33 @@ as $$
   held as (
     select s.id from public.sessions s where s.status <> 'scheduled'
   ),
-  -- Frekwencja na zakończonych zajęciach: obecni / zapisani (aktywni).
+  -- Frekwencja na zakończonych zajęciach: ilu zapisanych faktycznie przyszło.
+  --
+  -- Licznikiem musza byc obecni SPOSRÓD zapisanych, nie wszyscy obecni. Walk-in
+  -- (meldunek bez zapisu) nie podnosi mianownika, wiec dawne `present / booked`
+  -- liczyle obecnych dwa razy mocniej niż zapisanych: przy 2 zapisanych i 22
+  -- meldunkach zwracalo 1100, a eksponowany obok „wypisywka” dawalo -1000%.
   ratio as (
     select
-      (select count(*) from att a where a.session_id in (select id from held))            as present,
+      (select count(*)
+         from att a
+         where a.session_id in (select id from held)
+           and exists (select 1 from public.signups g
+                        where g.session_id = a.session_id and g.member_id = a.member_id
+                          and g.status = 'active'))                                       as present,
       (select count(*) from public.signups g where g.status = 'active'
          and g.session_id in (select id from held))                                       as booked
+  ),
+  -- Kto wszedł bez zapisu. Nie wchodzi do frekwencji (nie było czego odwołać), ale
+  -- trener musi to widzieć: bez tej liczby klub żyjący z walk-inów wyglądałby na
+  -- taki, gdzie nikt się nie pojawia — frekwencja liczy się od zapisów.
+  walk_ins as (
+    select count(*)::integer as n
+    from att a
+    where a.session_id in (select id from held)
+      and not exists (select 1 from public.signups g
+                       where g.session_id = a.session_id and g.member_id = a.member_id
+                         and g.status in ('active', 'waitlist'))
   )
   select jsonb_build_object(
     'total_members',   (select count(*) from public.profiles),
@@ -749,6 +770,7 @@ as $$
                   else round(present * 100.0 / booked)::integer end
       from ratio
     ),
+    'walk_ins',        (select n from walk_ins),
     'no_shows',        (select count(*)::integer from public.no_shows),
     'check_ins_today', (
       select count(*)::integer from att
