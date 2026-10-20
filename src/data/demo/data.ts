@@ -6,6 +6,7 @@
  */
 
 import { addWarsawDays, combineWarsaw, startOfWarsawDay, warsawToUtc } from '@/lib/poland-time';
+import { env } from '@/lib/env';
 import { materializeSessions } from '@/domain/schedule';
 import { pickSessionForCheckIn } from '@/domain/check-in';
 import type {
@@ -369,7 +370,8 @@ export function buildDemoDb(now: Date): DemoDb {
     pollVotes,
     intents,
     clubName: 'BJJ Club Warszawa',
-    checkInToken: 'club-demo-2026',
+    // Token demo bierze się z konfiguracji, żeby aplikacja i baza demo zawsze się zgadzały.
+    checkInToken: env.checkInToken,
     currentUserId: null,
   };
 }

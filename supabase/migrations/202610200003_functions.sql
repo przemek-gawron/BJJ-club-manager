@@ -621,6 +621,24 @@ as $$
   week_numbers as (
     select floor((local_week::date - date '2020-01-20') / 7)::bigint as wk from weeks
   ),
+  -- Najdłuższa passa tygodniowa w historii: gaps & islands na numerach tygodni.
+  islands as (
+    select wk, wk - row_number() over (order by wk) as grp from week_numbers
+  ),
+  longest as (
+    select coalesce(max(cnt), 0)::integer as longest_week_streak
+    from (select count(*) as cnt from islands group by grp) g
+  ),
+  -- Regularność miesiąca: % dni (do dziś) z co najmniej jednym treningiem — jak w TS.
+  month_progress as (
+    select
+      (
+        select count(distinct local_day)
+        from local
+        where local_day >= date_trunc('month', (now() at time zone 'Europe/Warsaw'))::date
+      ) as trained_days,
+      extract(day from (now() at time zone 'Europe/Warsaw'))::int as days_so_far
+  ),
   this_week as (
     select floor((date_trunc('week', now() at time zone 'Europe/Warsaw')::date - date '2020-01-20') / 7)::bigint as wk
   ),
@@ -672,6 +690,14 @@ as $$
       from local where local_day >= ((now() at time zone 'Europe/Warsaw')::date - 83)
     ),
     'week_streak', coalesce((select week_streak from streak), 0),
+    'longest_week_streak', coalesce((select longest_week_streak from longest), 0),
+    'current_month_ratio', (
+      select case
+        when days_so_far <= 0 then 0
+        else least(100, round(trained_days * 100.0 / days_so_far))::int
+      end
+      from month_progress
+    ),
     'no_shows', (select count(*)::integer from public.no_shows n where n.member_id = p_member),
     'by_class_type', (select coalesce(jsonb_agg(jsonb_build_array(key, value) order by value desc), '[]'::jsonb) from by_type),
     'by_weekday',  (select coalesce(jsonb_agg(jsonb_build_array(key, value) order by key), '[]'::jsonb) from by_weekday),

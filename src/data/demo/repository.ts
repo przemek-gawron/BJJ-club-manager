@@ -244,7 +244,7 @@ export const demoApi: ClubApi = {
       .filter((p) => p.role !== 'member' || p.membership === 'active')
       .slice(0, 6)
       .map((p) => ({
-        label: `${p.firstName} ${p.lastName}${p.nickname ? ` ($${p.nickname})` : ''}`,
+        label: `${p.firstName} ${p.lastName}${p.nickname ? ` (${p.nickname})` : ''}`,
         email: p.email,
         role: p.role,
       }));

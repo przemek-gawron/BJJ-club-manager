@@ -655,7 +655,7 @@ export const supabaseApi: ClubApi = {
       sessionsLast30Days: Number(value.sessions_last_30_days ?? 0),
       weeklyAverage: Number(value.weekly_average ?? 0),
       weekStreak: Number(value.week_streak ?? 0),
-      longestWeekStreak: Number(value.week_streak ?? 0),
+      longestWeekStreak: Number(value.longest_week_streak ?? value.week_streak ?? 0),
       currentMonthRatio: Number(value.current_month_ratio ?? 0),
       noShows: Number(value.no_shows ?? 0),
       byClassType: byType.map(([k, v]) => [k as ClassTemplate['classType'], Number(v)] as const),

@@ -35,7 +35,8 @@ function parse(): ParsedEnv {
     mode,
     supabaseUrl: url ?? '',
     supabaseAnonKey: anonKey ?? '',
-    checkInToken: read('EXPO_PUBLIC_CHECKIN_TOKEN') ?? RAW_TOKEN,
+    // Nazwa z .env może być w krótszej lub dłuższej formie — wspieramy obie.
+    checkInToken: read('EXPO_PUBLIC_CHECKIN_TOKEN') ?? read('EXPO_PUBLIC_CLUB_CHECKIN_TOKEN') ?? RAW_TOKEN,
   };
 }
 

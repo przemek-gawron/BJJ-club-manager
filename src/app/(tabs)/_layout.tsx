@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 import { Text } from 'react-native';
 
@@ -11,7 +11,10 @@ import { colors } from '@/theme/theme';
  * szerszy zakres tego samego ekranu, bez duplikowania tras.
  */
 export default function TabsLayout() {
-  const { isStaff } = useAuth();
+  const { isStaff, member } = useAuth();
+
+  // Bez sesji nie ma czego pokazać — dane demo rzucają bez zalogowanego profilu.
+  if (!member) return <Redirect href="/login" />;
 
   return (
     <Tabs

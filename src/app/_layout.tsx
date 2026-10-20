@@ -5,7 +5,7 @@ import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AuthGate, AuthProvider } from '@/state/AuthContext';
+import { AuthGate, AuthProvider, useAuth } from '@/state/AuthContext';
 import { colors } from '@/theme/theme';
 
 const queryClient = new QueryClient({
@@ -19,6 +19,41 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * Straż tras: bez profilu nie wchodzimy w zakładki ani szczegóły,
+ * a zalogowany nie wraca już na ekran logowania.
+ */
+const AppStack: React.FC = () => {
+  const { member } = useAuth();
+
+  return (
+    <>
+      <StatusBar style="light" />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.bg },
+          headerTintColor: colors.text,
+          headerTitleStyle: { fontWeight: '700' },
+          contentStyle: { backgroundColor: colors.bg },
+          headerShadowVisible: false,
+        }}
+      >
+        <Stack.Protected guard={!member}>
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+        </Stack.Protected>
+
+        <Stack.Protected guard={Boolean(member)} redirectTo="/login">
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="session/[id]" options={{ title: 'Zajęcia' }} />
+          <Stack.Screen name="member/[id]" options={{ title: 'Profil członka' }} />
+          <Stack.Screen name="check-in" options={{ title: 'Check-in' }} />
+          <Stack.Screen name="admin/index" options={{ title: 'Ustawienia klubu' }} />
+        </Stack.Protected>
+      </Stack>
+    </>
+  );
+};
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -26,23 +61,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <AuthGate>
-              <StatusBar style="light" />
-              <Stack
-                screenOptions={{
-                  headerStyle: { backgroundColor: colors.bg },
-                  headerTintColor: colors.text,
-                  headerTitleStyle: { fontWeight: '700' },
-                  contentStyle: { backgroundColor: colors.bg },
-                  headerShadowVisible: false,
-                }}
-              >
-                <Stack.Screen name="login" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="session/[id]" options={{ title: 'Zajęcia' }} />
-                <Stack.Screen name="member/[id]" options={{ title: 'Profil członka' }} />
-                <Stack.Screen name="check-in" options={{ title: 'Check-in' }} />
-                <Stack.Screen name="admin/index" options={{ title: 'Ustawienia klubu' }} />
-              </Stack>
+              <AppStack />
             </AuthGate>
           </AuthProvider>
         </QueryClientProvider>

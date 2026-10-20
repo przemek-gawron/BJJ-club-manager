@@ -39,7 +39,7 @@ export default function StatsScreen() {
               <Metric value={s.weekStreak} label="tygodniowa passa" caption={`rekord: ${s.longestWeekStreak}`} />
               <Metric value={s.sessionsLast30Days} label="ostatnie 30 dni" caption={`średnio ${s.weeklyAverage.toFixed(1)}/tydz.`} />
             </View>
-            <Progress value={Math.round(s.currentMonthRatio * 100)} label="regularność w tym miesiącu" />
+            <Progress value={s.currentMonthRatio} label="regularność w tym miesiącu" />
           </Card>
 
           <Card>

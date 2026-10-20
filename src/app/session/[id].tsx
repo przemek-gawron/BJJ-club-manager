@@ -419,6 +419,7 @@ const RosterEntry: React.FC<{
           {isStaff ? (
             <Button
               label={present ? 'wykreśl' : 'wpisz'}
+              accessibilityLabel={`${present ? 'wykreśl' : 'wpisz'}: ${row.displayName}`}
               variant={present ? 'ghost' : 'secondary'}
               small
               loading={busy}

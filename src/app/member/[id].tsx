@@ -12,7 +12,7 @@ import { TextField } from '@/components/ui/TextField';
 import { icons } from '@/components/ui/icons';
 import { useAssignBelt, useMember, useSetMembership, useUpdateMe } from '@/hooks/queries';
 import { useAuth } from '@/state/AuthContext';
-import { BELT_LABEL_PL, BELT_ORDER, MAX_STRIPE, beltLabel, validateBeltChange } from '@/domain/belts';
+import { BELT_LABEL_PL, BELT_ORDER, MAX_STRIPE, beltLabel, validateBeltChange, weightBand } from '@/domain/belts';
 import { MEMBERSHIP_LABEL_PL, ROLE_LABEL_PL, tenureLabel } from '@/domain/members';
 import { CLASS_TYPE_LABEL_PL } from '@/domain/schedule';
 import { consistencyLabel } from '@/domain/stats';
@@ -109,7 +109,7 @@ export default function MemberDetailScreen() {
           {isMe && member.email ? <Badge label={member.email} tone="muted" /> : null}
           {isMe && member.phone ? <Badge label={member.phone} tone="muted" /> : null}
           {isStaff && member.weightKg != null ? <Badge label={`${member.weightKg} kg`} tone="primary" /> : null}
-          {!isStaff ? <Badge label={stats ? 'masa: przedział 10 kg' : '—'} tone="muted" /> : null}
+          <Badge label={weightBand(member.weightKg)} tone="muted" />
         </View>
         {member.notes && isStaff ? <AppText variant="muted">Notatka trenera: {member.notes}</AppText> : null}
       </Card>
@@ -124,7 +124,7 @@ export default function MemberDetailScreen() {
       <Card tone="primary">
         <View style={styles.metricRow}>
           <Metric value={stats.weekStreak} label="passa tygodniowa" caption={`rekord ${stats.longestWeekStreak}`} />
-          <Metric value={stats.totalSessions} label="trenigów łącznie" caption={`${stats.sessionsLast30Days} w 30 dni`} />
+          <Metric value={stats.totalSessions} label="treningów łącznie" caption={`${stats.sessionsLast30Days} w 30 dni`} />
         </View>
         {stats.byClassType.length > 0 ? (
           <View style={styles.chipRow}>

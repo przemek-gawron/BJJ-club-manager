@@ -16,6 +16,8 @@ interface ButtonProps {
   readonly icon?: string;
   readonly style?: StyleProp<ViewStyle>;
   readonly testID?: string;
+  /** Etykieta dostępności — ważna, gdy sam tekst by niejednoznaczny (np. pięć razy «wpisz»). */
+  readonly accessibilityLabel?: string;
 }
 
 const variantStyles: Record<Variant, { container: ViewStyle; text: string }> = {
@@ -27,12 +29,13 @@ const variantStyles: Record<Variant, { container: ViewStyle; text: string }> = {
 };
 
 export const Button: React.FC<ButtonProps> = React.memo(
-  ({ label, onPress, variant = 'primary', disabled, loading, fullWidth, small, icon, style, testID }) => {
+  ({ label, onPress, variant = 'primary', disabled, loading, fullWidth, small, icon, style, testID, accessibilityLabel }) => {
     const tone = variantStyles[variant];
     return (
       <Pressable
         testID={testID}
         accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? label}
         accessibilityState={{ disabled: Boolean(disabled || loading) }}
         onPress={onPress}
         disabled={disabled || loading}
