@@ -295,8 +295,17 @@ create policy sparring_write_staff on public.sparring_intents
   with check (public.is_staff());
 
 -- ------------------------------------------------------------ club -------
-create policy club_settings_select on public.club_settings
-  for select to authenticated using (true);
+-- club_settings trzyma token z kodu QR. Polityka „using (true)” na całej tabeli
+-- udostępniałaby go każdemu zalogowanemu — a to on jest jedynym „hasłem” przy drzwiach:
+-- zna go każdy, kto ma aplikację, ten może się zameldować. Dlatego nazwa/city/timezone
+-- idą do widoku club_public, a tabela zostaje dla kadry.
+create or replace view public.club_public as
+select id, name, city, timezone, updated_at from public.club_settings;
+
+grant select on public.club_public to authenticated;
+
+create policy club_settings_select_staff on public.club_settings
+  for select to authenticated using (public.is_staff());
 
 create policy club_settings_write_admin on public.club_settings
   for all to authenticated

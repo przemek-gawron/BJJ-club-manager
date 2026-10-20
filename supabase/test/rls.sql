@@ -88,6 +88,25 @@ begin
     v_fails := v_fails || 'session_roster: widok nadal zwraca weight_kg; ';
   end if;
 
+  -- Nazwa klubu jest publiczna, ale w tabeli club_settings leży token meldunkowy,
+  -- więc członek nie ma do niej wstępu. Ekstranet czyta nazwę z widoku club_public.
+  select count(*) into v_count from public.club_settings;
+  if v_count <> 0 then
+    v_fails := v_fails || 'club_settings: członek odczytuje tabelę z tokenem meldunkowym; ';
+  end if;
+
+  select count(*) into v_count from public.club_public;
+  if v_count <> 1 then
+    v_fails := v_fails || format('club_public: członek widzi %s wierszy, powinno być 1 (nazwa klubu); ', v_count);
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'club_public' and column_name = 'checkin_token'
+  ) then
+    v_fails := v_fails || 'club_public: widok wystawia token meldunkowy; ';
+  end if;
+
   ---------------------------------------------------------------- --
   -- 2. Kadra widzi profile w całości
   ---------------------------------------------------------------- --

@@ -287,12 +287,15 @@ export const supabaseApi: ClubApi = {
 
   // -------------------------------------------------------------- klub ---
   async clubName() {
-    const { data, error } = await db().from('club_settings').select('name').eq('id', 1).maybeSingle();
+    // Nazwa jest w widoku club_public. Samej tabeli club_settings nie czytamy stąd:
+    // trzyma token meldunkowy i jest tylko dla kadry, a ten odpytuje każdy ekran.
+    const { data, error } = await db().from('club_public').select('name').maybeSingle();
     if (error || !data) return 'BJJ Club';
     return data.name;
   },
 
   async checkInToken() {
+    // Tylko kadra (patrz polityka club_settings_select_staff) — woła to panel admina.
     const { data, error } = await db().from('club_settings').select('checkin_token').eq('id', 1).maybeSingle();
     if (error || !data) throw new Error('Brak ustawień klubu — sprawdz migracje.');
     return data.checkin_token;
