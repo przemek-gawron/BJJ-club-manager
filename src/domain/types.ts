@@ -125,6 +125,8 @@ export interface Technique {
   readonly category: SparringFocus | 'escapes' | 'position';
   readonly classType: ClassType | 'any';
   readonly usageCount: number;
+  /** Krótki opis po polsku pokazywany trenerowi przy wyborze propozycji. */
+  readonly description?: string | null;
 }
 
 export interface Poll {
@@ -165,15 +167,22 @@ export interface SparringIntent {
 }
 
 /** Połączenie sesji z szablonem — wygodny widok dla UI. */
+/** Sesja z dołączonym szablonem i stanem dla zalogowanej osoby. */
 export interface SessionWithClass extends Session {
   readonly classTemplate: ClassTemplate;
+  readonly coachName: string;
   readonly signupCount: number;
   readonly waitlistCount: number;
   readonly attendanceCount: number;
   readonly isSignedUp: boolean;
   readonly isWaitlisted: boolean;
+  readonly myWaitlistPosition: number | null;
   readonly isCheckedIn: boolean;
-  readonly pollSummary: PollSummary | null;
+  readonly pollId: string | null;
+  readonly pollStatus: PollStatus | null;
+  readonly pollClosesAt: string | null;
+  readonly pollVotesCount: number;
+  readonly myVoteOptionId: string | null;
 }
 
 export interface PollOptionTally {
@@ -185,9 +194,14 @@ export interface PollOptionTally {
 
 export interface PollSummary {
   readonly poll: Poll;
-  readonly options: PollOptionTally[];
+  readonly sessionId: string;
+  readonly options: ReadonlyArray<PollOptionTally>;
   readonly totalVotes: number;
+  readonly winnerOptionId: string | null;
   readonly canVote: boolean;
+  /** Członek może dorzucić swoją propozycję (limit i status sprawdzone w logice). */
+  readonly canSuggest: boolean;
+  readonly isCoachView: boolean;
   readonly closesAt: string;
   readonly status: PollStatus;
 }

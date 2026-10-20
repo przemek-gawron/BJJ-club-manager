@@ -92,3 +92,39 @@ export function decideCheckIn(args: {
 export function isSessionFinished(endsAt: Date, now: Date): boolean {
   return now.getTime() >= endsAt.getTime();
 }
+
+/**
+ * Rozbiera treść kodu QR. Kod klubu ma format `bjjclub://check-in?t=<token>&s=<sessionId>`,
+ * ale tolerujemy też zwykły HTTPS z tymi samymi parametrami oraz goły token.
+ */
+export interface CheckInPayload {
+  readonly token: string;
+  readonly sessionId: string | null;
+}
+
+export function parseCheckInPayload(raw: string): CheckInPayload | null {
+  const value = raw.trim();
+  if (value.length === 0) return null;
+
+  const queryIndex = value.search(/[?]/);
+  if (queryIndex === -1) {
+    // Goły token bez struktury URL — akceptujemy tylko wartości bez spacji.
+    if (/\s/.test(value)) return null;
+    return { token: value, sessionId: null };
+  }
+
+  const query = value.slice(queryIndex + 1);
+  const params = new Map<string, string>();
+  for (const pair of query.split('&')) {
+    if (pair.length === 0) continue;
+    const eq = pair.indexOf('=');
+    const key = decodeURIComponent(eq === -1 ? pair : pair.slice(0, eq));
+    const val = eq === -1 ? '' : decodeURIComponent(pair.slice(eq + 1));
+    if (val.length > 0) params.set(key, val);
+  }
+
+  const token = params.get('t') ?? params.get('token');
+  if (!token || token.length === 0) return null;
+  const session = params.get('s') ?? params.get('sessionId') ?? null;
+  return { token, sessionId: session && session.length > 0 ? session : null };
+}

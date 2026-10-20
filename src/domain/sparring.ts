@@ -8,7 +8,7 @@
 
 import { beltDistance } from './belts';
 import { daysBetweenWarsaw } from '@/lib/poland-time';
-import type { Belt, MemberProfile, SparringCandidate, SparringFocus, SparringIntensity, SparringIntent } from './types';
+import type { Belt, MemberProfile, PublicMemberCard, SparringCandidate, SparringFocus, SparringIntensity, SparringIntent } from './types';
 
 /** Ważność intencji: lista dotyczy dzisiejszych zajęć, więc po 12 h ogłoszenie gaśnie. */
 export const INTENT_TTL_HOURS = 12;

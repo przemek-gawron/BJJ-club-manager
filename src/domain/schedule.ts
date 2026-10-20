@@ -4,7 +4,7 @@
  */
 
 import { addWarsawDays, combineWarsaw, startOfWarsawDay, warsawWeekday, weekdayName } from '@/lib/poland-time';
-import type { ClassTemplate, Session, SessionStatus } from './types';
+import type { ClassTemplate, ClassType, Level, Session, SessionStatus } from './types';
 
 /** Jak daleko w przyszłość generujemy sesje (dni). */
 export const MATERIALIZE_DAYS_AHEAD = 21;
@@ -112,3 +112,24 @@ export function canManageSignup(session: Session, now: Date): { ok: boolean; mes
 }
 
 export const CANCELLATION_REASONS = ['Choroba trenera', 'Wyjazd / seminar', 'Mata zajęta', 'Za mała frekwencja', 'Inne'] as const;
+
+/** Polskie etykiety typów zajęć — używane w statystykach i edytorze szablonów. */
+export const CLASS_TYPE_LABEL_PL: Record<ClassType, string> = {
+  gi: 'GI',
+  no_gi: 'NO-GI',
+  gi_no_gi: 'GI / NO-GI',
+  open_mat: 'Open Mat',
+  competition: 'sport / zawody',
+  conditioning: 'kondycja',
+};
+
+export const CLASS_TYPES: ReadonlyArray<ClassType> = ['gi', 'no_gi', 'gi_no_gi', 'open_mat', 'competition', 'conditioning'];
+
+export const LEVEL_LABEL_PL: Record<Level, string> = {
+  all: 'wszyscy',
+  beginners: 'początkujący',
+  intermediate: 'średnio zaawansowani',
+  advanced: 'zaawansowani',
+};
+
+export const LEVELS: ReadonlyArray<Level> = ['all', 'beginners', 'intermediate', 'advanced'];

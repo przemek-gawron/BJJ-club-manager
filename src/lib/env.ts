@@ -1,4 +1,4 @@
-import { Expo } from 'expo-constants';
+import Constants from 'expo-constants';
 
 /**
  * Konfiguracja runtime aplikacji.
@@ -47,7 +47,7 @@ export const isDemoMode = env.mode === 'demo';
 export const CLUB_CHECKIN_TOKEN = env.checkInToken;
 
 /** Ids aplikacji — przydatne w logach i przy debugowaniu na urzadzeniu. */
-export const APP_NAME = (Expo.expo?.name as string | undefined) ?? 'BJJ Club Manager';
+export const APP_NAME = (Constants.expoConfig?.name as string | undefined) ?? 'BJJ Club Manager';
 
 if (env.mode === 'supabase' && (!env.supabaseUrl || !env.supabaseAnonKey)) {
   // Zabezpieczenie przed polowa skonfigurowanym srodowiskiem — latwiej zobaczyc blad niz dziwic sie 401.
