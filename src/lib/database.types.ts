@@ -259,7 +259,6 @@ export type Database = {
           display_name: string;
           belt: Belt;
           stripe: number;
-          weight_kg: number | null;
         };
         Relationships: [];
       };

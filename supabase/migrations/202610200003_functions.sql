@@ -878,8 +878,10 @@ select
        then trim(p.first_name || ' ' || p.nickname)
        else trim(p.first_name || ' ' || p.last_name) end as display_name,
   p.belt,
-  p.stripe,
-  p.weight_kg
+  p.stripe
+  -- Bez dokładnej masy: widok działa z uprawnieniami właściciela tabel, więc omija RLS
+  -- i pokazałby wagę każdej osoby każdemu członkowi klubu. Lista startowa jej nie używa,
+  -- a kadra i tak czyta wagę z tabeli profiles (polityka self-or-staff).
 from public.signups g
 join public.profiles p on p.id = g.member_id
 left join public.attendance a on a.session_id = g.session_id and a.member_id = g.member_id

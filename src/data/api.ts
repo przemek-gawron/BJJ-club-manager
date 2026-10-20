@@ -39,7 +39,6 @@ export interface RosterRow {
   readonly displayName: string;
   readonly belt: MemberProfile['belt'];
   readonly stripe: MemberProfile['stripe'];
-  readonly weightKg: number | null;
   readonly status: Signup['status'];
   readonly waitlistPosition: number | null;
   readonly checkedInAt: string | null;

@@ -77,6 +77,18 @@ begin
   end if;
 
   ---------------------------------------------------------------- --
+  -- 1b. Widoki omijają RLS, więc nie mogą wynosić danych wrażliwych
+  ---------------------------------------------------------------- --
+  -- Dokładna masa ciała: była w session_roster, czyli każdy członek widział wagę
+  -- całej listy startowej. Został przedział w katalogu, nie kolumna z wagą.
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'session_roster' and column_name = 'weight_kg'
+  ) then
+    v_fails := v_fails || 'session_roster: widok nadal zwraca weight_kg; ';
+  end if;
+
+  ---------------------------------------------------------------- --
   -- 2. Kadra widzi profile w całości
   ---------------------------------------------------------------- --
   perform set_config('request.jwt.claims', jsonb_build_object('sub', v_coach, 'role', 'authenticated')::text, false);
