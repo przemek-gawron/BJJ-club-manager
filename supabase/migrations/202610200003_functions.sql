@@ -838,7 +838,9 @@ as $$
                ((now() at time zone 'Europe/Warsaw')::date - max((a.checked_in_at at time zone 'Europe/Warsaw')::date))::int as days_since
         from public.profiles p
         join public.attendance a on a.member_id = p.id
-        where p.membership_status = 'active'
+        -- Tylko zwykli członkowie: trener, który sam prowadzi zajęcia i nie melduje
+        -- się jako ćwiczący, nie jest osobą do „zagrania” o frekwencję.
+        where p.membership_status = 'active' and p.role = 'member'
         group by p.id, p.first_name, p.nickname, p.belt, p.stripe
         having max((a.checked_in_at at time zone 'Europe/Warsaw')::date) < ((now() at time zone 'Europe/Warsaw')::date - 14)
         order by days_since desc
